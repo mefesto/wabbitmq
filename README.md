@@ -187,6 +187,16 @@ defaults:
   * `auto-ack?` boolean indicating if messages are auto-acknowledged (default: false)
   * `timeout` Block for the given timeout in milliseconds. A value of zero blocks indefinitely. (default: 0)
 
+## Development
+
+In order to run tests you'll need RabbitMQ locally installed. The tests will try to connect with the
+following configuration:
+
+    {:host "localhost"
+     :username "guest"
+     :password "guest"
+     :virtual-host "/test"}
+
 ## TODO
 
   * Documentation, especially in the source code.
