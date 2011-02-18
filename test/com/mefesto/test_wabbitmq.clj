@@ -57,3 +57,10 @@
                     (.interrupt thread))]
     (.start (Thread. interrupt))
     (is (thrown? RuntimeException (first (consuming-seq true))))))
+
+(deftest message-envelope-conversion
+  (publish "test" (.getBytes "hello"))
+  (let [msg (first (consuming-seq true))]
+    (is (map? msg))
+    (is (map? (:envelope msg)))
+    (is (not (nil? (-> msg :envelope :delivery-tag))))))

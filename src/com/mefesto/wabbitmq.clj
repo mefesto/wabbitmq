@@ -377,7 +377,7 @@
 (defn- as-message [^QueueingConsumer$Delivery delivery]
   (when delivery
     (let [body  (.getBody delivery)
-          env   (.getEnvelope delivery)
+          env   (as-envelope (.getEnvelope delivery))
           props (props->map (.getProperties delivery))]
       {:body (decode props body)
        :envelope env
