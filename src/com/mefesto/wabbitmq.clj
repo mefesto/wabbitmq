@@ -216,14 +216,8 @@
     (queue-declare-internal)
     (f)))
 
-(defmacro with-queue [& forms]
-  (let [form (first forms)
-        cfg  (if (or (instance? String form)
-                     (symbol? form)
-                     (map? form))
-               form)
-        body (if cfg (rest forms) forms)]
-    `(with-queue* ~cfg (fn [] ~@body))))
+(defmacro with-queue [cfg & body]
+  `(with-queue* ~cfg (fn [] ~@body)))
 
 ;;; channel commands
 (defn abort
