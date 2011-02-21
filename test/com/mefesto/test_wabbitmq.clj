@@ -64,3 +64,10 @@
     (is (map? msg))
     (is (map? (:envelope msg)))
     (is (not (nil? (-> msg :envelope :delivery-tag))))))
+
+(deftest message-headers
+  (publish "test"
+           {:headers {"count" 0}}
+           (.getBytes "hello"))
+  (let [msg (first (consuming-seq true))]
+    (is (= (get-in msg [:props :headers :count]) 0))))

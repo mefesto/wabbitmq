@@ -117,7 +117,9 @@
    :correlation-id (.getCorrelationId props)
    :delivery-mode (.getDeliveryMode props)
    :expiration (.getExpiration props)
-   :headers (.getHeaders props)
+   :headers (if-let [hdrs (.getHeaders props)]
+              (zipmap (map keyword (keys hdrs))
+                      (vals hdrs)))
    :message-id (.getMessageId props)
    :priority (.getPriority props)
    :reply-to (.getReplyTo props)
@@ -134,7 +136,10 @@
     (.setCorrelationId (:correlation-id amap))
     (.setDeliveryMode (:delivery-mode amap))
     (.setExpiration (:expiration amap))
-    (.setHeaders (:headers amap))
+    (.setHeaders (if-let [hdrs (:headers amap)]
+                   (java.util.HashMap.
+                    (zipmap (map name (keys hdrs))
+                            (vals hdrs)))))
     (.setMessageId (:message-id amap))
     (.setPriority (:priority amap))
     (.setReplyTo (:reply-to amap))
