@@ -167,10 +167,11 @@
 (declare exchange-declare exchange-declare-passive)
 
 (defn- exchange-declare-internal []
-  (if (:passive? (exchange))
-    (exchange-declare-passive (:name (exchange)))
-    (let [{:keys [name type durable? auto-delete? args]} (exchange)]
-      (exchange-declare name type durable? auto-delete? args))))
+  (when-not (= (:name (exchange)) "") ; skip if default exchange
+    (if (:passive? (exchange))
+      (exchange-declare-passive (:name (exchange)))
+      (let [{:keys [name type durable? auto-delete? args]} (exchange)]
+        (exchange-declare name type durable? auto-delete? args)))))
 
 (defn with-exchange* [config f]
   (binding [*exchange* (make-exchange config)]
