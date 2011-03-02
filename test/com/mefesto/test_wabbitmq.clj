@@ -58,6 +58,14 @@
     (.start (Thread. interrupt))
     (is (thrown? RuntimeException (first (consuming-seq true))))))
 
+(deftest consuming-seq-basic
+  (dotimes [n 100]
+    (publish "test" {:content-type "application/clojure"} n))
+  (loop [items (consuming-seq true 1) n 0]
+    (when (< n 100)
+      (is (= n (-> items first :body)))
+      (recur (next items) (inc n)))))
+
 (deftest message-envelope-conversion
   (publish "test" (.getBytes "hello"))
   (let [msg (first (consuming-seq true))]
