@@ -23,8 +23,21 @@
    :requested-heartbeat ConnectionFactory/DEFAULT_HEARTBEAT
    :addresses nil})
 
+(defn- env-config []
+  (if (System/getenv "RABBITMQ_URL")
+    (let [uri (java.net.URI. (System/getenv "RABBITMQ_URL"))
+          [username password] (if (.getUserInfo uri)
+                                (.split (.getUserInfo uri) ":"))
+          uri-config {:host (.getHost uri)
+                      :port (.getPort uri)
+                      :virtual-host (.getPath uri)
+                      :username username
+                      :password password}]
+      (into connection-defaults (filter val uri-config)))
+    connection-defaults))
+
 (defn- connection-factory [config]
-  (let [cfg (merge connection-defaults config)]
+  (let [cfg (merge (env-config) config)]
     (doto (ConnectionFactory.)
       (.setHost (:host cfg))
       (.setPort (:port cfg))
