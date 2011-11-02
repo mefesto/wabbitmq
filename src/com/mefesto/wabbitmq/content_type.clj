@@ -1,5 +1,5 @@
 (ns com.mefesto.wabbitmq.content-type
-  (:use [clojure.contrib.json :only (json-str read-json)]))
+  (:use [cheshire.core :only [generate-string parse-string]]))
 
 (defn- charset [type]
   (second (re-find #"charset=([^;]+)" type)))
@@ -29,14 +29,14 @@
 (defn application-json-encode [content-type data]
   (when data
     (if-let [charset (charset content-type)]
-      (-> (json-str data) (.getBytes charset))
-      (-> (json-str data) (.getBytes)))))
+      (-> (generate-string data) (.getBytes charset))
+      (-> (generate-string data) (.getBytes)))))
 
 (defn application-json-decode [content-type data]
   (when data
     (if-let [charset (charset content-type)]
-      (-> (String. data charset) (read-json))
-      (-> (String. data) (read-json)))))
+      (-> (String. data charset) (parse-string))
+      (-> (String. data) (parse-string)))))
 
 (def application-json [application-json? application-json-encode application-json-decode])
 
