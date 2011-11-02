@@ -3,7 +3,7 @@
   :url "https://github.com/mefesto/wabbitmq"
   :license {:name "Eclipse Public License - v 1.0"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.2.0"]
-                 [org.clojure/clojure-contrib "1.2.0"]
+  :dependencies [[org.clojure/clojure "1.2.1"]
+                 [cheshire "2.0.2"]
                  [com.rabbitmq/amqp-client "2.2.0"]]
-  :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]])
+  :dev-dependencies [[swank-clojure "1.3.3"]])
