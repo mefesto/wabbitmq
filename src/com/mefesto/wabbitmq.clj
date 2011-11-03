@@ -33,11 +33,10 @@
                       :virtual-host (.getPath uri)
                       :username username
                       :password password}]
-      (into connection-defaults (filter val uri-config)))
-    connection-defaults))
+      (into {} (filter val uri-config)))))
 
 (defn- connection-factory [config]
-  (let [cfg (merge (env-config) config)]
+  (let [cfg (merge connection-defaults (env-config) config)]
     (doto (ConnectionFactory.)
       (.setHost (:host cfg))
       (.setPort (:port cfg))
