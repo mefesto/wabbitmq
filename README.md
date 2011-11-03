@@ -15,60 +15,68 @@ with their respective exchanges or queues and not how they are bound. For exampl
 a `direct` exchange and later change to a `topic` with routing-key pattern matching without impacting the
 consumers.
 
-    (use 'com.mefesto.wabbitmq)
+```clj
+(use 'com.mefesto.wabbitmq)
 
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel
-        (exchange-declare "test.exchange" "direct")
-        (queue-declare "test.queue")
-        (queue-bind "test.queue" "test.exchange" "test")))
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel
+    (exchange-declare "test.exchange" "direct")
+    (queue-declare "test.queue")
+    (queue-bind "test.queue" "test.exchange" "test")))
+```
 
 Now let's implement a simple producer for our test exchange:
 
-    (use 'com.mefesto.wabbitmq)
+```clj
+(use 'com.mefesto.wabbitmq)
 
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel
-        (with-exchange "test.exchange"
-          (publish "test" (.getBytes "Hello world!"))))) ; test is the routing-key
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel
+    (with-exchange "test.exchange"
+      (publish "test" (.getBytes "Hello world!"))))) ; test is the routing-key
+```
 
 And here is a simple consumer:
 
-    (use 'com.mefesto.wabbitmq)
+```clj
+(use 'com.mefesto.wabbitmq)
 
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel
-        (with-queue "test.queue"
-          (doseq [msg (consuming-seq true)] ; consumes messages with auto-acknowledge enabled
-            (println "received:" (String. (:body msg)))))))
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel
+    (with-queue "test.queue"
+      (doseq [msg (consuming-seq true)] ; consumes messages with auto-acknowledge enabled
+        (println "received:" (String. (:body msg)))))))
+```
 
 WabbitMQ depends on RabbitMQ's Java client which passes messages around as a byte-array. It would be more
 convenient to pass messages around as strings or objects and let the library handle the conversion. So, WabbitMQ 
 allows you to provide different content-type handlers for altering the message body. Below is an example:
 
-    ;; example producer
-    (use 'com.mefesto.wabbitmq
-         'com.mefesto.wabbitmq.content-type)
+```clj
+;; example producer
+(use 'com.mefesto.wabbitmq
+     'com.mefesto.wabbitmq.content-type)
 
-    (def supported-content-types
-      [application-json])
+(def supported-content-types
+  [application-json])
 
-    (def props {:content-type "application/json"})
+(def props {:content-type "application/json"})
 
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel {:content-types supported-content-types}
-        (with-exchange "test.exchange"
-          (publish "test" props {:fname "Allen" :lname "Johnson"}))))
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel {:content-types supported-content-types}
+    (with-exchange "test.exchange"
+      (publish "test" props {:fname "Allen" :lname "Johnson"}))))
 
-    ;; example consumer
-    (use 'com.mefesto.wabbitmq
-         'com.mefesto.wabbitmq.content-type)
+;; example consumer
+(use 'com.mefesto.wabbitmq
+     'com.mefesto.wabbitmq.content-type)
 
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel {:content-types [application-json]}
-        (with-queue "test.queue"
-          (doseq [{body :body} (consuming-seq true)]
-            (println (str "received: firstname=" (:fname body) ", lastname=" (:lname body)))))))
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel {:content-types [application-json]}
+    (with-queue "test.queue"
+      (doseq [{body :body} (consuming-seq true)]
+        (println (str "received: firstname=" (:fname body) ", lastname=" (:lname body)))))))
+```
 
 A content-type handler is a vector of three functions:
 
@@ -83,31 +91,33 @@ at `src/com/mefesto/wabbitmq/content_type.clj` for more information about conten
 You should use a separate channel per thread. Here is an example of a consumer using multiple threads to 
 process messages:
 
-    ;; producer
-    (use 'com.mefesto.wabbitmq
-         'com.mefesto.wabbitmq.content-type)
-    
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (with-channel {:content-types [text-plain]}
-        (with-exchange "test.exchange"
-          (dotimes [_ 10]
-            (publish "test" {:content-type "text/plain"} "Hello, world!")))))
+```clj
+;; producer
+(use 'com.mefesto.wabbitmq
+     'com.mefesto.wabbitmq.content-type)
+
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (with-channel {:content-types [text-plain]}
+    (with-exchange "test.exchange"
+      (dotimes [_ 10]
+        (publish "test" {:content-type "text/plain"} "Hello, world!")))))
 
 
-    ;; consumer
-    (use 'com.mefesto.wabbitmq
-         'com.mefesto.wabbitmq.content-type)
-    
-    (def num-consumers 5)
-    
-    (defn consumer []
-      (with-channel {:content-types [text-plain]}
-        (with-queue "test.queue"
-          (doseq [{body :body} (consuming-seq true)]
-            (println (str (Thread/currentThread) " received: " body))))))
-    
-    (with-broker {:host "localhost" :username "guest" :password "guest"}
-      (invoke-consumers num-consumers consumer))
+;; consumer
+(use 'com.mefesto.wabbitmq
+     'com.mefesto.wabbitmq.content-type)
+
+(def num-consumers 5)
+
+(defn consumer []
+  (with-channel {:content-types [text-plain]}
+    (with-queue "test.queue"
+      (doseq [{body :body} (consuming-seq true)]
+        (println (str (Thread/currentThread) " received: " body))))))
+
+(with-broker {:host "localhost" :username "guest" :password "guest"}
+  (invoke-consumers num-consumers consumer))
+```
 
 ### Broker configuration options
 
@@ -192,10 +202,17 @@ defaults:
 In order to run tests you'll need RabbitMQ locally installed. The tests will try to connect with the
 following configuration:
 
-    {:host "localhost"
-     :username "guest"
-     :password "guest"
-     :virtual-host "/test"}
+```clj
+{:host "localhost"
+ :username "guest"
+ :password "guest"
+ :virtual-host "/test"}
+```
+
+You'll probably have to create the `/test` vhost:
+
+    $ sudo rabbitmqctl add_vhost /test
+    $ sudo rabbitmqctl set_permissions -p /test guest . . .
 
 ## TODO
 
