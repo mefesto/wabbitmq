@@ -197,6 +197,11 @@ following configuration:
      :password "guest"
      :virtual-host "/test"}
 
+You'll probably have to create the `/test` vhost:
+
+    $ sudo rabbitmqctl add_vhost /test
+    $ sudo rabbitmqctl set_permissions -p /test guest . . .
+
 ## TODO
 
   * Documentation, especially in the source code.
