@@ -35,8 +35,8 @@
 (defn application-json-decode [content-type data]
   (when data
     (if-let [charset (charset content-type)]
-      (-> (String. data charset) (parse-string))
-      (-> (String. data) (parse-string)))))
+      (-> (String. data charset) (parse-string true))
+      (-> (String. data) (parse-string true)))))
 
 (def application-json [application-json? application-json-encode application-json-decode])
 
