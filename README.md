@@ -7,7 +7,7 @@ library (v2.2.0).
 
 First add the following to your `project.clj`:
 
-    [com.mefesto/wabbitmq "0.1.4"]
+    [com.mefesto/wabbitmq "0.1.5"]
 
 Next, let's setup a binding between a test exchange and queue. You could do the binding within your
 producer/consumer code but I like to separate this out so the producer/consumers only need to be concerned
