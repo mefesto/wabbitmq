@@ -1,5 +1,5 @@
 (ns com.mefesto.wabbitmq.test-content-type
-  (:use [clojure.contrib.json :only (json-str)]
+  (:use [cheshire.core :only (generate-string)]
         [clojure.test]
         [com.mefesto.wabbitmq.content-type])
   (:import [java.util Arrays]))
@@ -27,18 +27,18 @@
   (is (false? (application-json? "application/other"))))
 
 (deftest application-json-encoding
-  (is (Arrays/equals (-> (json-str [1 2 3]) (.getBytes))
+  (is (Arrays/equals (-> (generate-string [1 2 3]) (.getBytes))
                      (application-json-encode "application/json" [1 2 3])))
-  (is (Arrays/equals (-> (json-str [1 2 3]) (.getBytes "utf16"))
+  (is (Arrays/equals (-> (generate-string [1 2 3]) (.getBytes "utf16"))
                      (application-json-encode "application/json; charset=UTF-16" [1 2 3]))))
 
 (deftest application-json-decoding
   (is (= [1 2 3]
            (application-json-decode "application/json"
-                                    (-> (json-str [1 2 3]) (.getBytes)))))
+                                    (-> (generate-string [1 2 3]) (.getBytes)))))
   (is (= [1 2 3]
            (application-json-decode "application/json; charset=UTF-16"
-                                    (-> (json-str [1 2 3]) (.getBytes "utf16"))))))
+                                    (-> (generate-string [1 2 3]) (.getBytes "utf16"))))))
 
 (deftest application-clojure-supported?
   (is (true? (application-clojure? "application/clojure")))
