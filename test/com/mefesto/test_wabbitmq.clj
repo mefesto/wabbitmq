@@ -1,7 +1,8 @@
 (ns com.mefesto.test-wabbitmq
   (:use [clojure.test]
         [com.mefesto.wabbitmq]
-        [com.mefesto.wabbitmq.content-type :only (application-clojure application-json text-plain)])
+        [com.mefesto.wabbitmq.content-type
+         :only (application-clojure application-json text-plain)])
   (:import [com.rabbitmq.client QueueingConsumer QueueingConsumer$Delivery]
            [java.io IOException]))
 
@@ -11,8 +12,13 @@
   (:body (first (consuming-seq true 5000))))
 
 (defn do-connect [f]
-  (with-broker {:host "localhost" :username "guest" :password "guest" :virtual-host "/test"}
-    (with-channel {:content-types [text-plain application-json application-clojure]}
+  (with-broker {:host "localhost"
+                :username "guest"
+                :password "guest"
+                :virtual-host "/test"}
+    (with-channel {:content-types [text-plain
+                                   application-json
+                                   application-clojure]}
       (f))))
 
 (defn do-bindings [f]
@@ -38,14 +44,16 @@
   (is (= "hello" (pop-msg))))
 
 (deftest publish-json
-  (publish "test" {:content-type "application/json"} {"fname" "Allen" "lname" "Johnson"})
-  (is (= {:fname "Allen" :lname "Johnson"}
-         (pop-msg))))
+  (publish "test"
+           {:content-type "application/json"}
+           {"fname" "Allen" "lname" "Johnson"})
+  (is (= {:fname "Allen" :lname "Johnson"} (pop-msg))))
 
 (deftest publish-clj
-  (publish "test" {:content-type "application/clojure"} [1 2 3 {:key "val"}])
-  (is (= [1 2 3 {:key "val"}]
-           (pop-msg))))
+  (publish "test"
+           {:content-type "application/clojure"}
+           [1 2 3 {:key "val"}])
+  (is (= [1 2 3 {:key "val"}] (pop-msg))))
 
 (deftest consuming-seq-timeout
   (is (nil? (first (consuming-seq true 5000)))))

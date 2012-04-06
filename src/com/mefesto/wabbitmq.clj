@@ -1,6 +1,7 @@
 (ns com.mefesto.wabbitmq
-  (:import [com.rabbitmq.client AMQP$BasicProperties Address ConnectionFactory Envelope
-            QueueingConsumer QueueingConsumer$Delivery]
+  (:import [com.rabbitmq.client AMQP$BasicProperties Address
+            ConnectionFactory Envelope QueueingConsumer
+            QueueingConsumer$Delivery]
            [java.util.concurrent Executors]))
 
 ;;; connection functions
@@ -9,7 +10,9 @@
 
 (defn- connection []
   (or *connection*
-      (throw (IllegalStateException. "No connection bound! Are you using `with-broker'?"))))
+      (-> "No connection bound! Are you using `with-broker'?"
+          (IllegalStateException.)
+          (throw))))
 
 (def ^{:private true}
   connection-defaults
@@ -65,17 +68,21 @@
 (def ^{:dynamic true}
   *content-types* nil)
 
+(defn- find-codec [content-types content-type]
+  (letfn [(matches? [[pred & _]] (pred content-type))]
+    (first (filter matches? content-types))))
+
 (defn- encode [props data]
   (if-let [content-type (:content-type props)]
-    (if-let [encoder (first (for [[pred enc _] *content-types* :when (pred content-type)] enc))]
-      (encoder content-type data)
+    (if-let [[_ f _] (find-codec *content-types* content-type)]
+      (f content-type data)
       data)
     data))
 
 (defn- decode [props data]
   (if-let [content-type (:content-type props)]
-    (if-let [decoder (first (for [[pred _ dec] *content-types* :when (pred content-type)] dec))]
-      (decoder content-type data)
+    (if-let [[_ _ f] (find-codec *content-types* content-type)]
+      (f content-type data)
       data)
     data))
 
@@ -85,14 +92,17 @@
 
 (defn- channel []
   (or *channel*
-      (throw (IllegalStateException. "No channel bound! Are you using `with-channel'?"))))
+      (-> "No channel bound! Are you using `with-channel'?"
+          (IllegalStateException.)
+          (throw))))
 
 (def ^{:private true}
   channel-defaults
   {:num nil
    :content-types nil})
 
-(defn- make-channel [{:keys [num confirm-listener default-consumer flow-listener return-listener] :as cfg}]
+(defn- make-channel [{:keys [num confirm-listener default-consumer
+                             flow-listener return-listener] :as cfg}]
   (let [chan (if num
                (.createChannel (connection) num)
                (.createChannel (connection)))]
@@ -165,7 +175,9 @@
 
 (defn- exchange []
   (or *exchange*
-      (throw (IllegalStateException. "No exchange bound! Are you using `with-exchange'?"))))
+      (-> "No exchange bound! Are you using `with-exchange'?"
+          (IllegalStateException.)
+          (throw))))
 
 (def ^{:private true}
   exchange-defaults
@@ -204,7 +216,9 @@
 
 (defn- queue []
   (or *queue*
-      (throw (IllegalStateException. "No queue bound! Are you using `with-queue'?"))))
+      (-> "No queue bound! Are you using `with-queue'?"
+          (IllegalStateException.)
+          (throw))))
 
 (def ^{:private true}
   queue-defaults
@@ -362,7 +376,8 @@
      (consume auto-ack? tag false false args callback))
   ([auto-ack? tag no-local? exclusive? args callback]
      (let [qname (:name (queue))]
-       (.basicConsume (channel) qname auto-ack? tag no-local? exclusive? args callback))))
+       (.basicConsume (channel) qname auto-ack? tag no-local?
+                      exclusive? args callback))))
 
 (defn queue-get
   ([] (get false))
