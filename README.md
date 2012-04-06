@@ -1,19 +1,21 @@
 # WabbitMQ
 
-WabbitMQ is a Clojure messaging library for use with RabbitMQ. It wraps RabbitMQ's Java AMQP client
-library (v2.2.0).
+WabbitMQ is a Clojure messaging library for use with RabbitMQ.  It
+wraps RabbitMQ's Java AMQP client library (v2.8.1).
 
 ## Usage
 
 First add the following to your `project.clj`:
 
-    [com.mefesto/wabbitmq "0.1.5"]
+    [com.mefesto/wabbitmq "0.2.0"]
 
-Next, let's setup a binding between a test exchange and queue. You could do the binding within your
-producer/consumer code but I like to separate this out so the producer/consumers only need to be concerned
-with their respective exchanges or queues and not how they are bound. For example, you can start out with
-a `direct` exchange and later change to a `topic` with routing-key pattern matching without impacting the
-consumers.
+Next, let's setup a binding between a test exchange and queue.  You
+could do the binding within your producer/consumer code but I like to
+separate this out so the producer/consumers only need to be concerned
+with their respective exchanges or queues and not how they are bound.
+For example, you can start out with a `direct` exchange and later
+change to a `topic` with routing-key pattern matching without
+impacting the consumers.
 
 ```clj
 (use 'com.mefesto.wabbitmq)
@@ -48,9 +50,11 @@ And here is a simple consumer:
         (println "received:" (String. (:body msg)))))))
 ```
 
-WabbitMQ depends on RabbitMQ's Java client which passes messages around as a byte-array. It would be more
-convenient to pass messages around as strings or objects and let the library handle the conversion. So, WabbitMQ 
-allows you to provide different content-type handlers for altering the message body. Below is an example:
+WabbitMQ depends on RabbitMQ's Java client which passes messages
+around as a byte-array.  It would be more convenient to pass messages
+around as strings or objects and let the library handle the
+conversion.  So, WabbitMQ allows you to provide different content-type
+handlers for altering the message body.  Below is an example:
 
 ```clj
 ;; example producer
@@ -84,12 +88,14 @@ A content-type handler is a vector of three functions:
   2. An encoding function that takes the message and converts it to a byte-array.
   3. A decoding function that takes a byte-array and converts it to some data type.
 
-Provided are basic implementations for text/plain, application/json and application/clojure. Take a look
-at `src/com/mefesto/wabbitmq/content_type.clj` for more information about content-type handlers.
+Provided are basic implementations for text/plain, application/json
+and application/clojure.  Take a look at
+`src/com/mefesto/wabbitmq/content_type.clj` for more information about
+content-type handlers.
 
 
-You should use a separate channel per thread. Here is an example of a consumer using multiple threads to 
-process messages:
+You should use a separate channel per thread. Here is an example of a
+consumer using multiple threads to process messages:
 
 ```clj
 ;; producer
@@ -168,7 +174,8 @@ For use with the `with-queue` macro:
 
 ### Message properties
 
-This is a Clojure map of the following properties. This map is converted to an instance of
+This is a Clojure map of the following properties. This map is
+converted to an instance of
 `com.rabbitmq.client.AMQP$BasicProperties`:
 
   * `:app-id` String
@@ -190,17 +197,17 @@ This is a Clojure map of the following properties. This map is converted to an i
 
 ### Consuming messages with consuming-seq
 
-`consuming-seq` pulls messages from the currently bound queue using the `com.rabbitmq.client.QueueingConsumer`.
-The full function signature is `(consuming-seq auto-ack? timeout)` with overridden versions with the following
-defaults:
+`consuming-seq` pulls messages from the currently bound queue.  The
+full function signature is `(consuming-seq auto-ack? timeout)` with
+overridden versions with the following defaults:
 
   * `auto-ack?` boolean indicating if messages are auto-acknowledged (default: false)
   * `timeout` Block for the given timeout in milliseconds. A value of zero blocks indefinitely. (default: 0)
 
 ## Development
 
-In order to run tests you'll need RabbitMQ locally installed. The tests will try to connect with the
-following configuration:
+In order to run tests you'll need RabbitMQ locally installed. The
+tests will try to connect with the following configuration:
 
 ```clj
 {:host "localhost"
@@ -224,6 +231,6 @@ You'll probably have to create the `/test` vhost:
 
 ## License
 
-Copyright (C) 2010 Allen Johnson
+Copyright (C) 2012 Allen Johnson
 
 Distributed under the Eclipse Public License, the same as Clojure. See the file COPYING.
