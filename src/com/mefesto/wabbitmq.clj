@@ -1,8 +1,9 @@
 (ns com.mefesto.wabbitmq
-  (:import [com.rabbitmq.client AMQP$BasicProperties Address
-            ConnectionFactory Envelope QueueingConsumer
-            QueueingConsumer$Delivery]
-           [java.util.concurrent Executors]))
+  (:import [com.rabbitmq.client
+            AMQP$BasicProperties Address ConnectionFactory DefaultConsumer
+            Envelope]
+           [java.util.concurrent
+            BlockingQueue Executors LinkedBlockingQueue TimeUnit]))
 
 ;;; connection functions
 (def ^{:dynamic true}
@@ -401,32 +402,33 @@
      :routing-key (.getRoutingKey env)
      :redelivered? (.isRedeliver env)}))
 
-(defn- as-message [^QueueingConsumer$Delivery delivery]
-  (when delivery
-    (let [body  (.getBody delivery)
-          env   (as-envelope (.getEnvelope delivery))
-          props (props->map (.getProperties delivery))]
-      {:body (decode props body)
-       :envelope env
-       :props props})))
+(defn- as-message [env props body]
+  (let [env (as-envelope env)
+        props (props->map props)]
+    {:body (decode props body)
+     :envelope env
+     :props props}))
 
-(defn- next-delivery [^QueueingConsumer consumer timeout]
-  (if (> timeout 0)
-    (.nextDelivery consumer timeout)
-    (.nextDelivery consumer)))
+(defn- message-consumer [channel ^BlockingQueue queue]
+  (proxy [DefaultConsumer] [channel]
+    (handleDelivery [tag env props body]
+      (.put queue [env props body]))))
+
+(defn- message-seq [^BlockingQueue queue timeout]
+  (lazy-seq
+   (when-let [[env props body] (if (= timeout 0)
+                                 (.take queue)
+                                 (.poll queue timeout TimeUnit/MILLISECONDS))]
+     (cons (as-message env props body)
+           (message-seq queue timeout)))))
 
 (defn consuming-seq
-  ([]
-     (consuming-seq false))
-  ([auto-ack?]
-     (consuming-seq auto-ack? 0))
+  ([] (consuming-seq false))
+  ([auto-ack?] (consuming-seq auto-ack? 0))
   ([auto-ack? timeout]
-     (let [consumer (QueueingConsumer. (channel))]
-       (consume auto-ack? consumer)
-       ((fn message-seq []
-          (lazy-seq
-           (cons (as-message (next-delivery consumer timeout))
-                 (message-seq))))))))
+     (let [queue (LinkedBlockingQueue. 32)]
+       (consume auto-ack? (message-consumer (channel) queue))
+       (message-seq queue timeout))))
 
 (defn invoke-consumers [n consumer]
   (let [pool (Executors/newFixedThreadPool n)
