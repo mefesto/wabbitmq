@@ -8,7 +8,7 @@
 (def *consumer* nil)
 
 (defn pop-msg []
-  (:body (first (consuming-seq true 1))))
+  (:body (first (consuming-seq true 5000))))
 
 (defn do-connect [f]
   (with-broker {:host "localhost" :username "guest" :password "guest" :virtual-host "/test"}
@@ -48,7 +48,7 @@
            (pop-msg))))
 
 (deftest consuming-seq-timeout
-  (is (nil? (first (consuming-seq true 1)))))
+  (is (nil? (first (consuming-seq true 5000)))))
 
 (deftest consuming-seq-notimeout
   (let [thread (Thread/currentThread)
@@ -61,7 +61,7 @@
 (deftest consuming-seq-basic
   (dotimes [n 100]
     (publish "test" {:content-type "application/clojure"} n))
-  (loop [items (consuming-seq true 1) n 0]
+  (loop [items (consuming-seq true 5000) n 0]
     (when (< n 100)
       (is (= n (-> items first :body)))
       (recur (next items) (inc n)))))
