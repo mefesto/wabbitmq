@@ -5,5 +5,4 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.2.1"]
                  [cheshire "2.0.2"]
-                 [com.rabbitmq/amqp-client "2.2.0"]]
-  :dev-dependencies [[swank-clojure "1.3.3"]])
+                 [com.rabbitmq/amqp-client "2.2.0"]])
