@@ -1,20 +1,20 @@
 (ns com.mefesto.wabbitmq.content-type
   (:use [cheshire.core :only [generate-string parse-string]]))
 
-(defn- charset [type]
+(defn- ^String charset [type]
   (second (re-find #"charset=([^;]+)" type)))
 
 ;; text/plain support
 (defn text-plain? [content-type]
   (not (nil? (re-find #"^text/.*" content-type))))
 
-(defn text-plain-encode [content-type data]
+(defn text-plain-encode [content-type ^String data]
   (when data
     (if-let [charset (charset content-type)]
       (.getBytes data charset)
       (.getBytes data))))
 
-(defn text-plain-decode [content-type data]
+(defn text-plain-decode [content-type ^bytes data]
   (when data
     (if-let [charset (charset content-type)]
       (String. data charset)
@@ -32,7 +32,7 @@
       (-> (generate-string data) (.getBytes charset))
       (-> (generate-string data) (.getBytes)))))
 
-(defn application-json-decode [content-type data]
+(defn application-json-decode [content-type ^bytes data]
   (when data
     (if-let [charset (charset content-type)]
       (-> (String. data charset) (parse-string true))
@@ -50,7 +50,7 @@
       (-> (pr-str data) (.getBytes charset))
       (-> (pr-str data) (.getBytes)))))
 
-(defn application-clojure-decode [content-type data]
+(defn application-clojure-decode [content-type ^bytes data]
   (when data
     (if-let [charset (charset content-type)]
       (-> (String. data charset) (read-string))

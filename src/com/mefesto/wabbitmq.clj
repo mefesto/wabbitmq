@@ -1,15 +1,14 @@
 (ns com.mefesto.wabbitmq
-  (:import [com.rabbitmq.client
-            AMQP$BasicProperties Address ConnectionFactory DefaultConsumer
-            Envelope]
-           [java.util.concurrent
-            BlockingQueue Executors LinkedBlockingQueue TimeUnit]))
+  (:import [com.rabbitmq.client AMQP$BasicProperties Address Channel
+            ConnectionFactory Connection DefaultConsumer Envelope]
+           [java.util.concurrent BlockingQueue Executors Future
+            LinkedBlockingQueue TimeUnit]))
 
 ;;; connection functions
 (def ^{:dynamic true}
   *connection* nil)
 
-(defn- connection []
+(defn- ^Connection connection []
   (or *connection*
       (-> "No connection bound! Are you using `with-broker'?"
           (IllegalStateException.)
@@ -39,7 +38,7 @@
                       :password password}]
       (into {} (filter val uri-config)))))
 
-(defn- connection-factory [config]
+(defn- ^ConnectionFactory connection-factory [config]
   (let [cfg (merge connection-defaults (env-config) config)]
     (doto (ConnectionFactory.)
       (.setHost (:host cfg))
@@ -51,10 +50,12 @@
       (.setRequestedFrameMax (:requested-frame-max cfg))
       (.setRequestedHeartbeat (:requested-heartbeat cfg)))))
 
-(defn- make-connection [{addrs :addresses :as config}]
+(defn- ^Connection make-connection [{addrs :addresses :as config}]
   (let [factory (connection-factory config)]
     (if addrs
-      (.newConnection factory (into-array Address addrs))
+      (.newConnection factory
+                      ^"[Lcom.rabbitmq.client.Address;"
+                      (into-array Address addrs))
       (.newConnection factory))))
 
 (defn with-broker* [config f]
@@ -91,7 +92,7 @@
 (def ^{:dynamic true}
   *channel* nil)
 
-(defn- channel []
+(defn- ^Channel channel []
   (or *channel*
       (-> "No channel bound! Are you using `with-channel'?"
           (IllegalStateException.)
@@ -102,19 +103,19 @@
   {:num nil
    :content-types nil})
 
-(defn- make-channel [{:keys [num confirm-listener default-consumer
+(defn- ^Channel make-channel [{:keys [num confirm-listener default-consumer
                              flow-listener return-listener] :as cfg}]
-  (let [chan (if num
-               (.createChannel (connection) num)
-               (.createChannel (connection)))]
+  (let [chan ^Channel (if num
+                        (.createChannel (connection) num)
+                        (.createChannel (connection)))]
     (when confirm-listener
-      (.setConfirmListener confirm-listener))
+      (.addConfirmListener chan confirm-listener))
     (when default-consumer
       (.setDefaultConsumer chan default-consumer))
     (when flow-listener
-      (.setFlowListener chan flow-listener))
+      (.addFlowListener chan flow-listener))
     (when return-listener
-      (.setReturnListener chan return-listener))
+      (.addReturnListener chan return-listener))
     chan))
 
 (defn with-channel* [cfg f]
@@ -161,6 +162,7 @@
     (.setExpiration (:expiration amap))
     (.setHeaders (if-let [hdrs (:headers amap)]
                    (java.util.HashMap.
+                    ^java.util.Map
                     (zipmap (map name (keys hdrs))
                             (vals hdrs)))))
     (.setMessageId (:message-id amap))
@@ -433,6 +435,6 @@
 (defn invoke-consumers [n consumer]
   (let [pool (Executors/newFixedThreadPool n)
         workers (repeatedly n #(bound-fn* consumer))]
-    (doseq [future (.invokeAll pool workers)]
+    (doseq [^Future future (.invokeAll pool workers)]
       (.get future))
     (.shutdown pool)))
