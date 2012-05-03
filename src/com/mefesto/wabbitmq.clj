@@ -438,3 +438,25 @@
     (doseq [^Future future (.invokeAll pool workers)]
       (.get future))
     (.shutdown pool)))
+
+;; publishing
+(defprotocol PublishQueue
+  (drain! [this])
+  (put! [this routing-key props data])
+  (close [this]))
+
+(defn publish-queue []
+  (let [queue (LinkedBlockingQueue.) eof (Object.)]
+    (reify
+      PublishQueue
+      (drain! [this]
+        (loop [msg (.take queue)]
+          (when-not (= eof msg)
+            (publish (:routing-key msg) (:props msg) (:data msg))
+            (recur (.take queue)))))
+      (put! [this key props data]
+        (.put queue {:routing-key key
+                     :props props
+                     :data data}))
+      (close [this]
+        (.put queue eof)))))
