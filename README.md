@@ -7,7 +7,7 @@ wraps RabbitMQ's Java AMQP client library (v2.8.1).
 
 First add the following to your `project.clj`:
 
-    [com.mefesto/wabbitmq "0.2.1"]
+    [com.mefesto/wabbitmq "0.2.2"]
 
 Next, let's setup a binding between a test exchange and queue.  You
 could do the binding within your producer/consumer code but I like to
