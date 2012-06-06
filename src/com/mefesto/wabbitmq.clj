@@ -27,25 +27,21 @@
    :addresses nil})
 
 (defn- env-config []
-  (if (System/getenv "RABBITMQ_URL")
-    (let [uri (java.net.URI. (System/getenv "RABBITMQ_URL"))
-          [username password] (if (.getUserInfo uri)
-                                (.split (.getUserInfo uri) ":"))
-          uri-config {:host (.getHost uri)
-                      :port (.getPort uri)
-                      :virtual-host (.getPath uri)
-                      :username username
-                      :password password}]
-      (into {} (filter val uri-config)))))
+  (when-let [uri (System/getenv "RABBITMQ_URL")]
+    {:uri uri}))
 
 (defn- ^ConnectionFactory connection-factory [config]
-  (let [cfg (merge connection-defaults (env-config) config)]
-    (doto (ConnectionFactory.)
-      (.setHost (:host cfg))
-      (.setPort (:port cfg))
-      (.setVirtualHost (:virtual-host cfg))
-      (.setUsername (:username cfg))
-      (.setPassword (:password cfg))
+  (let [cfg (merge connection-defaults (env-config) config)
+        res (if (:uri cfg)
+              (doto (ConnectionFactory.)
+                (.setUri (:uri cfg)))
+              (doto (ConnectionFactory.)
+                (.setHost (:host cfg))
+                (.setPort (:port cfg))
+                (.setVirtualHost (:virtual-host cfg))
+                (.setUsername (:username cfg))
+                (.setPassword (:password cfg))))]
+    (doto res
       (.setRequestedChannelMax (:requested-channel-max cfg))
       (.setRequestedFrameMax (:requested-frame-max cfg))
       (.setRequestedHeartbeat (:requested-heartbeat cfg)))))
