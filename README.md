@@ -18,35 +18,35 @@ change to a `topic` with routing-key pattern matching without
 impacting the consumers.
 
 ```clj
-(use 'com.mefesto.wabbitmq)
+(require '[com.mefesto.wabbitmq :as mq])
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel
-    (exchange-declare "test.exchange" "direct")
-    (queue-declare "test.queue")
-    (queue-bind "test.queue" "test.exchange" "test")))
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel
+    (mq/exchange-declare "test.exchange" "direct")
+    (mq/queue-declare "test.queue")
+    (mq/queue-bind "test.queue" "test.exchange" "test")))
 ```
 
 Now let's implement a simple producer for our test exchange:
 
 ```clj
-(use 'com.mefesto.wabbitmq)
+(require '[com.mefesto.wabbitmq :as mq])
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel
-    (with-exchange "test.exchange"
-      (publish "test" (.getBytes "Hello world!"))))) ; test is the routing-key
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel
+    (mq/with-exchange "test.exchange"
+      (mq/publish "test" (.getBytes "Hello world!"))))) ; test is the routing-key
 ```
 
 And here is a simple consumer:
 
 ```clj
-(use 'com.mefesto.wabbitmq)
+(require '[com.mefesto.wabbitmq :as mq])
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel
-    (with-queue "test.queue"
-      (doseq [msg (consuming-seq true)] ; consumes messages with auto-acknowledge enabled
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel
+    (mq/with-queue "test.queue"
+      (doseq [msg (mq/consuming-seq true)] ; consumes messages with auto-acknowledge enabled
         (println "received:" (String. (:body msg)))))))
 ```
 
@@ -58,28 +58,26 @@ handlers for altering the message body.  Below is an example:
 
 ```clj
 ;; example producer
-(use 'com.mefesto.wabbitmq
-     'com.mefesto.wabbitmq.content-type)
+(require '[com.mefesto.wabbitmq :as mq]
+         '[com.mefesto.wabbitmq.content-type :as mime])
 
-(def supported-content-types
-  [application-json])
-
-(def props {:content-type "application/json"})
-
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel {:content-types supported-content-types}
-    (with-exchange "test.exchange"
-      (publish "test" props {:fname "Allen" :lname "Johnson"}))))
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel {:content-types [mime/application-json]}
+    (mq/with-exchange "test.exchange"
+      (mq/publish "test"
+                  {:content-type "application/json"}
+                  {:fname "Allen" :lname "Johnson"}))))
 
 ;; example consumer
-(use 'com.mefesto.wabbitmq
-     'com.mefesto.wabbitmq.content-type)
+(require '[com.mefesto.wabbitmq :as mq]
+         '[com.mefesto.wabbitmq.content-type :as mime])
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel {:content-types [application-json]}
-    (with-queue "test.queue"
-      (doseq [{body :body} (consuming-seq true)]
-        (println (str "received: firstname=" (:fname body) ", lastname=" (:lname body)))))))
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel {:content-types [mime/application-json]}
+    (mq/with-queue "test.queue"
+      (doseq [{body :body} (mq/consuming-seq true)]
+        (printf "received: fname=%s, lname=%s%n" (:fname body) (:lname body))
+        (flush)))))
 ```
 
 A content-type handler is a vector of three functions:
@@ -99,36 +97,36 @@ consumer using multiple threads to process messages:
 
 ```clj
 ;; producer
-(use 'com.mefesto.wabbitmq
-     'com.mefesto.wabbitmq.content-type)
+(require '[com.mefesto.wabbitmq :as mq]
+         '[com.mefesto.wabbitmq.content-type :as mime])
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (with-channel {:content-types [text-plain]}
-    (with-exchange "test.exchange"
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/with-channel {:content-types [mime/text-plain]}
+    (mq/with-exchange "test.exchange"
       (dotimes [_ 10]
-        (publish "test" {:content-type "text/plain"} "Hello, world!")))))
-
+        (mq/publish "test" {:content-type "text/plain"} "Hello, world!")))))
 
 ;; consumer
-(use 'com.mefesto.wabbitmq
-     'com.mefesto.wabbitmq.content-type)
+(require '[com.mefesto.wabbitmq :as mq]
+         '[com.mefesto.wabbitmq.content-type :as mime])
 
 (def num-consumers 5)
 
 (defn consumer []
-  (with-channel {:content-types [text-plain]}
-    (with-queue "test.queue"
-      (doseq [{body :body} (consuming-seq true)]
-        (println (str (Thread/currentThread) " received: " body))))))
+  (mq/with-channel {:content-types [mime/text-plain]}
+    (mq/with-queue "test.queue"
+      (doseq [{body :body} (mq/consuming-seq true)]
+        (printf "%s received: %s%n" (Thread/currentThread) body)))))
 
-(with-broker {:host "localhost" :username "guest" :password "guest"}
-  (invoke-consumers num-consumers consumer))
+(mq/with-broker {:uri "amqp://localhost/test"}
+  (mq/invoke-consumers num-consumers consumer))
 ```
 
 ### Broker configuration options
 
 For use with the `with-broker` macro:
 
+  * `:uri` Convenience property to set `host`, `port`, `virtual-host`, `username` and `password` using the following format: `amqp://[username:password@]host[:port]/virtual-host` (default: nil)
   * `:host` (default: localhost)
   * `:port` (default: -1)
   * `:virtual-host` (default: /)
@@ -213,13 +211,16 @@ tests will try to connect with the following configuration:
 {:host "localhost"
  :username "guest"
  :password "guest"
- :virtual-host "/test"}
+ :virtual-host "test"}
+
+;; or using a uri
+{:uri "amqp://localhost/test"}
 ```
 
-You'll probably have to create the `/test` vhost:
+You'll probably have to create the `test` vhost:
 
-    $ sudo rabbitmqctl add_vhost /test
-    $ sudo rabbitmqctl set_permissions -p /test guest . . .
+    $ sudo rabbitmqctl add_vhost test
+    $ sudo rabbitmqctl set_permissions -p test guest . . .
 
 ## TODO
 
