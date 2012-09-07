@@ -1,3 +1,20 @@
+# NOTE: This project is no longer being maintained
+
+This was one of my first clojure projects and it was fun.  Its design
+is based on similar patterns found in the old `clojure.contrib.sql`
+(clojure v1.2 days?) by using dynamic vars to manage connections,
+channels, etc.  Early on this seemed cool but things quickly became
+hard to work with.  Unfortunately, I don't have the time to update this
+library with the lessons learned.
+
+This repository remains in case anyone still uses it.  Although, if
+you still use it I recommend switching to [langohr][1] which is
+actively maintained and better designed or simply use the [RabbitMQ
+Java Client][2] directly.
+
+[1]: https://github.com/michaelklishin/langohr
+[2]: http://www.rabbitmq.com/java-client.html
+
 # WabbitMQ
 
 WabbitMQ is a Clojure messaging library for use with RabbitMQ.  It
